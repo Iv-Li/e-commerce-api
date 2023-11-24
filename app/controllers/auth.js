@@ -8,7 +8,8 @@ const register = async (req, res) => {
     throw new BadRequest(`Duplicate value: ${email} already exists`)
   }
   const user = await User.create(req.body)
-  res.status(StatusCodes.CREATED).json({ user, success: 'success'})
+  const { _v, password, ...rest} = user.toObject()
+  res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
 const login = (req, res) => {
