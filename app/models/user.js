@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const validator = require('validator')
+const bcrypt = require('bcrypt')
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -30,5 +31,16 @@ const UserSchema = new mongoose.Schema({
     default: 'user'
   },
 })
+
+
+UserSchema.pre('save', async function() {
+  const salt = await bcrypt.genSalt(10)
+  this.password = await bcrypt.hash(this.password, salt)
+})
+
+UserSchema.methods.comparePassword = async function(comparedPassword) {
+  const isMatch = await bcrypt.compare(comparedPassword, this.password)
+  return isMatch
+}
 
 module.exports = mongoose.model('User', UserSchema)
