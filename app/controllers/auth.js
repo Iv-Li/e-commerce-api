@@ -1,7 +1,6 @@
 const { StatusCodes } = require('http-status-codes')
-const jwt = require('jsonwebtoken')
 const User = require('../models/user')
-const { BadRequest } = require('../errors')
+const { BadRequest, Unauthenticated } = require('../errors')
 const { attachCookiesToRes } = require('../utils')
 
 const register = async (req, res) => {
@@ -18,8 +17,26 @@ const register = async (req, res) => {
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
-const login = (req, res) => {
-  res.send('login')
+const login = async (req, res) => {
+  const { email, password } = req.body
+  if (!email || !password) {
+    throw new BadRequest('Please provide email and password')
+  }
+
+  const user = await User.findOne({ email })
+
+  if(!user) {
+    throw new Unauthenticated('No credential')
+  }
+
+  const isPasswordMatch = await user.comparePassword(password)
+  if(!isPasswordMatch) {
+    throw new Unauthenticated('Password not valid')
+  }
+  const { __v, password: pass, ...rest} = user.toObject()
+  const tokenPayload = { name: rest.name, role: rest.role, id: rest.id }
+  attachCookiesToRes({ res, tokenPayload })
+  res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
 const logout = (req, res) => {
