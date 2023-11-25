@@ -40,7 +40,8 @@ const login = async (req, res) => {
 }
 
 const logout = (req, res) => {
-  res.send('logout')
+  res.cookie('token', '', { expiresIn: new Date(Date.now())})
+  res.status(StatusCodes.OK).json({ success: 'success'})
 }
 
 module.exports = {
