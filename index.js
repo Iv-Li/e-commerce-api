@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser')
 const connectDB = require('./app/db/connectDB')
 const errorMiddleware = require('./app/middleware/error-handler')
 const notFoundMiddleware = require('./app/middleware/not-found')
+const { authenticate } = require('./app/middleware/authentication')
 
 const authRouter = require('./app/routes/auth')
 const userRouter = require('./app/routes/user')
@@ -18,7 +19,7 @@ app.use(express.json())
 app.use(cookieParser(process.env.COOKIE_SECRET))
 
 app.use('/api/v1/auth', authRouter)
-app.use('/api/v1/users', userRouter)
+app.use('/api/v1/users', authenticate, userRouter)
 
 app.get('/', (req, res) => {
   res.send('SUCCESS')
