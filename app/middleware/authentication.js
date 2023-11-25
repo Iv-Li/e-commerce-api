@@ -12,6 +12,7 @@ const authenticate = (req, res, next) => {
   try {
     const { name, role, id } = isTokenValid({ token })
     req.user = { name, role, id }
+    console.log({user: isTokenValid({ token })})
     next()
   } catch (err) {
     throw new Unauthenticated('Authentication invalid')

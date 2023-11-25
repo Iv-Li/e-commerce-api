@@ -12,7 +12,8 @@ const register = async (req, res) => {
   const user = await User.create(req.body)
   const { __v, password, ...rest} = user.toObject()
 
-  const tokenPayload = { name: rest.name, role: rest.role, id: rest.id }
+  const tokenPayload = { name: rest.name, role: rest.role, id: rest._id }
+  console.log({tokenPayload})
   attachCookiesToRes({ res, tokenPayload })
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
@@ -34,7 +35,7 @@ const login = async (req, res) => {
     throw new Unauthenticated('Password not valid')
   }
   const { __v, password: pass, ...rest} = user.toObject()
-  const tokenPayload = { name: rest.name, role: rest.role, id: rest.id }
+  const tokenPayload = { name: rest.name, role: rest.role, id: rest._id }
   attachCookiesToRes({ res, tokenPayload })
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
