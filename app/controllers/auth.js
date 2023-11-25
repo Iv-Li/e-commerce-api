@@ -2,7 +2,7 @@ const { StatusCodes } = require('http-status-codes')
 const jwt = require('jsonwebtoken')
 const User = require('../models/user')
 const { BadRequest } = require('../errors')
-const { createJWT } = require('../utils')
+const { attachCookiesToRes } = require('../utils')
 
 const register = async (req, res) => {
   const { email } = req.body
@@ -14,8 +14,8 @@ const register = async (req, res) => {
   const { __v, password, ...rest} = user.toObject()
 
   const tokenPayload = { name: rest.name, role: rest.role, id: rest.id }
-  const token = createJWT({ payload: tokenPayload })
-  res.status(StatusCodes.CREATED).json({ user: rest, success: 'success', token})
+  attachCookiesToRes({ res, tokenPayload })
+  res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
 const login = (req, res) => {
