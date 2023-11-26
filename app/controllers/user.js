@@ -26,8 +26,23 @@ const getCurrentUser = async (req, res) => {
   res.status(StatusCodes.OK).json({ user, success: "success" })
 }
 
-const updateUser = (req, res) => {
-  res.send('updateUser')
+const updateUser = async (req, res) => {
+  const { name, email } = req.body
+  const updatedFields = {}
+
+  if(name) {
+    updatedFields.name = name
+  }
+  if(email) {
+    updatedFields.email = email
+  }
+  const user = await User.findOneAndUpdate({_id: req.user.id}, updatedFields, { new: true, runValidators: true }).select('-password -__v')
+
+  if (!user) {
+    throw new NotFound('User not found')
+  }
+
+  res.status(StatusCodes.OK).json({ user, success: "success" })
 }
 
 const updateUserPassword = async (req, res) => {
