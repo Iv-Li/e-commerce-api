@@ -1,6 +1,7 @@
 const { StatusCodes } = require('http-status-codes')
 const User = require('../models/user')
 const { NotFound, BadRequest } = require('../errors')
+const { checkPermission } = require('../utils')
 const getAllUsers = async (req, res) => {
   const users = await User.find({ role: 'user'}).select('-password -__v')
   res.status(StatusCodes.OK).json({ users, success: "success" })
@@ -13,6 +14,7 @@ const getSingleUser = async (req, res) => {
     throw new NotFound('User not found')
   }
 
+  checkPermission(req.user, user)
   res.status(StatusCodes.OK).json({ user, success: "success" })
 }
 
