@@ -14,6 +14,7 @@ const { authenticate } = require('./app/middleware/authentication')
 const authRouter = require('./app/routes/auth')
 const userRouter = require('./app/routes/user')
 const productRouter = require('./app/routes/product')
+const reviewRouter = require('./app/routes/review')
 
 app.use(morgan('tiny'))
 app.use(express.json())
@@ -22,6 +23,7 @@ app.use(cookieParser(process.env.COOKIE_SECRET))
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', authenticate, userRouter)
 app.use('/api/v1/products', productRouter)
+app.use('/api/v1/reviews', reviewRouter)
 
 app.get('/', (req, res) => {
   res.send('SUCCESS')
