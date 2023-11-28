@@ -14,7 +14,7 @@ const getAllProducts = async (req, res) => {
 
 const getSingleProduct = async (req, res) => {
   const prodId = req.params.id
-  const product = await Product.findById(prodId)
+  const product = await Product.findById(prodId).populate('reviews')
 
   if(!product) {
     throw new BadRequest(`Product with id ${prodId} not found`)
