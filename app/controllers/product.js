@@ -33,11 +33,13 @@ const updateImgProduct = (req, res) => {
 
 const deleteProduct = async (req, res) => {
   const prodId = req.params.id
-  const product = await Product.findByIdAndDelete(prodId)
+  const product = await Product.findById(prodId)
 
   if(!product) {
     throw new BadRequest(`Product with id ${prodId} not found`)
   }
+
+  await product.deleteOne()
   res.status(StatusCodes.OK).json({ success: 'success' })
 }
 
