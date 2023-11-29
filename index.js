@@ -15,6 +15,7 @@ const authRouter = require('./app/routes/auth')
 const userRouter = require('./app/routes/user')
 const productRouter = require('./app/routes/product')
 const reviewRouter = require('./app/routes/review')
+const orderRouter = require('./app/routes/order')
 
 app.use(morgan('tiny'))
 app.use(express.json())
@@ -24,6 +25,7 @@ app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', authenticate, userRouter)
 app.use('/api/v1/products', productRouter)
 app.use('/api/v1/reviews', reviewRouter)
+app.use('/api/v1/orders', authenticate, orderRouter)
 
 app.get('/', (req, res) => {
   res.send('SUCCESS')
