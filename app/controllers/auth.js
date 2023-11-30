@@ -13,7 +13,7 @@ const register = async (req, res) => {
   const { __v, password, ...rest} = user.toObject()
 
   const tokenPayload = createTokenUser(rest)
-  console.log({tokenPayload})
+
   attachCookiesToRes({ res, tokenPayload })
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
