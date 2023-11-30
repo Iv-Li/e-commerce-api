@@ -5,6 +5,11 @@ const app = express()
 
 const morgan = require('morgan')
 const cookieParser = require('cookie-parser')
+const rateLimit = require('express-rate-limit')
+const helmet = require('helmet')
+const xssClean = require('xss-clean')
+const cors = require('cors')
+const mongoSanitize = require('express-mongo-sanitize')
 
 const connectDB = require('./app/db/connectDB')
 const errorMiddleware = require('./app/middleware/error-handler')
@@ -16,6 +21,16 @@ const userRouter = require('./app/routes/user')
 const productRouter = require('./app/routes/product')
 const reviewRouter = require('./app/routes/review')
 const orderRouter = require('./app/routes/order')
+
+app.set('trust proxy', 1);
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60
+}))
+app.use(helmet())
+app.use(xssClean())
+app.use(cors())
+app.use(mongoSanitize())
 
 app.use(morgan('tiny'))
 app.use(express.json())
