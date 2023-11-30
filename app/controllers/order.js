@@ -3,6 +3,7 @@ const Order = require('../models/order')
 const Product = require('../models/product')
 const { NotFound, BadRequest } = require('../errors')
 const { checkPermission } = require('../utils')
+const connectStripe = require('../services/connectStripe')
 const getAllOrders = async (req, res) => {
   const orders = await Order.find({})
   res.status(StatusCodes.OK).json({ orders, count: orders.length, success: 'success' })
@@ -58,16 +59,19 @@ const createOrder = async (req, res) => {
 
   const total = subtotal + tax + shippingFee
 
+  const clientSecret = await connectStripe({ amount: total })
+
   const order = await Order.create({
     tax,
     shippingFee,
     orderItems,
     subtotal,
     total,
-    user: req.user.id
+    user: req.user.id,
+    clientSecret
   })
 
-  res.status(StatusCodes.OK).json({ order, success: 'success' })
+  res.status(StatusCodes.OK).json({ order, clientSecret, success: 'success' })
 }
 
 const updateOrder = async (req, res) => {
