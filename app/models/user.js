@@ -30,6 +30,12 @@ const UserSchema = new mongoose.Schema({
     },
     default: 'user'
   },
+  verificationToken: String,
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verified: Date
 })
 
 
