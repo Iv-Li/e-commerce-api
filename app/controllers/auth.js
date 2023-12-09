@@ -13,12 +13,11 @@ const register = async (req, res) => {
   if (isEmailExisted) {
     throw new BadRequest(`Duplicate value: ${email} already exists`)
   }
-  await User.create(req.body)
-
   const verificationToken ='fake token'
-  sendVerifyEmail({ email, verificationToken, origin  })
+  await User.create({ ...req.body, verificationToken })
+  sendVerifyEmail({ email, verificationToken, origin:  process.env.CLIENT_ORIGIN  })
 
-  res.status(StatusCodes.OK).json({ success: 'success' })
+  res.status(StatusCodes.OK).json({ success: 'success', message: 'Check email to verify the account' })
 }
 
 const login = async (req, res) => {
@@ -45,7 +44,6 @@ const login = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   const { email, verificationToken } = req.body
-
   const user = await User.findOne({email})
 
   if (!user || (user.verificationToken !== verificationToken)) {
