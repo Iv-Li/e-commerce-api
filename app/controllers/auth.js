@@ -7,6 +7,8 @@ const {
   sendVerifyEmail,
   sendResetEmail
 } = require('../utils')
+const Token = require("../models/token");
+const crypto = require('crypto')
 
 const register = async (req, res) => {
   const { email } = req.body
@@ -14,7 +16,7 @@ const register = async (req, res) => {
   if (isEmailExisted) {
     throw new BadRequest(`Duplicate value: ${email} already exists`)
   }
-  const verificationToken = crypto.randomBytes(70).toString('hex')
+  const verificationToken = crypto.randomBytes(64).toString('hex')
   await User.create({ ...req.body, verificationToken })
   sendVerifyEmail({ email, verificationToken, origin:  process.env.CLIENT_ORIGIN  })
 
@@ -37,9 +39,38 @@ const login = async (req, res) => {
   if(!isPasswordMatch) {
     throw new Unauthenticated('Password not valid')
   }
+
   const { __v, password: pass, ...rest} = user.toObject()
   const tokenPayload = createTokenUser(rest)
-  attachCookiesToRes({ res, tokenPayload })
+
+  let refreshToken = ''
+  const existedRefreshToken = await Token.findOne({
+    user: tokenPayload.user.id
+  })
+
+  if (existedRefreshToken) {
+    const { isValid } = existedRefreshToken
+    if (!isValid) {
+      throw new CustomError.UnauthenticatedError('Invalid Credentials');
+    }
+
+
+    refreshToken = existedRefreshToken
+
+    attachCookiesToRes({ res, user: tokenPayload, refreshToken })
+    res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
+
+    return
+  }
+
+  refreshToken = crypto.randomBytes(70).toString('hex')
+  const userAgent = req.headers['user-agent']
+  const ip = req.ip
+  const userToken = { ip, userAgent, user: user._id }
+
+  await Token.create(userToken)
+
+  attachCookiesToRes({ res, user: tokenPayload, refreshToken })
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
@@ -55,7 +86,7 @@ const verifyEmail = async (req, res) => {
   await user.save()
   const { __v, password, ...rest} = user.toObject()
   const tokenPayload = createTokenUser(rest)
-  attachCookiesToRes({ res, tokenPayload })
+  attachCookiesToRes({ res, user: tokenPayload, refreshToken: res.refreshToken })
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
@@ -100,7 +131,6 @@ const resetPassword = async (req, res) => {
 
   user.password = password
   user.passwordToken = ''
-  user.password = null
   await user.save()
 
   const { __v, password: pass, ...rest} = user.toObject()

@@ -1,25 +1,44 @@
 const { Unauthenticated } = require('../errors')
-const { isTokenValid } = require('../utils')
+const { isTokenValid, createTokenUser } = require('../utils')
 const { Unauthorized } = require('../errors')
-
-const authenticate = (req, res, next) => {
-  const {token} = req.signedCookies
-
-  if (!token) {
-    throw new Unauthenticated('Token not provided')
-  }
+const Token = require('../models/token')
+const User = require('../models/user')
+const { attachCookiesToRes } = require('../utils')
+const authenticate = async (req, res, next) => {
+  const { accessToken, refreshToken } = req.signedCookies
 
   try {
-    const { name, role, id } = isTokenValid({ token })
-    req.user = { name, role, id }
 
+    if(accessToken) {
+      const { name, role, id } = isTokenValid(accessToken)
+      req.user = { name, role, id }
+
+      next()
+    }
+
+    const tokenPayload = isTokenValid(refreshToken)
+
+    const existedToken = await Token.findOne({
+      user: tokenPayload.user.id,
+      refreshToken: tokenPayload.refreshToken
+    })
+
+    if(!existedToken || !existedToken?.isValid) {
+      throw new Unauthenticated('Authentication invalid')
+    }
+
+    attachCookiesToRes({
+      res,
+      user: tokenPayload.user,
+      refreshToken: existedToken.refreshToken
+    })
+
+    req.user = tokenPayload.user
     next()
+
   } catch (err) {
     throw new Unauthenticated('Authentication invalid')
   }
-
-
-
 }
 
 const authorizedPermission = (...roles) => {
