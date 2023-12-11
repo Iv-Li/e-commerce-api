@@ -4,7 +4,8 @@ const { BadRequest, Unauthenticated } = require('../errors')
 const {
   attachCookiesToRes,
   createTokenUser,
-  sendVerifyEmail
+  sendVerifyEmail,
+  sendResetEmail
 } = require('../utils')
 
 const register = async (req, res) => {
@@ -13,7 +14,7 @@ const register = async (req, res) => {
   if (isEmailExisted) {
     throw new BadRequest(`Duplicate value: ${email} already exists`)
   }
-  const verificationToken ='fake token'
+  const verificationToken = crypto.randomBytes(70).toString('hex')
   await User.create({ ...req.body, verificationToken })
   sendVerifyEmail({ email, verificationToken, origin:  process.env.CLIENT_ORIGIN  })
 
@@ -49,12 +50,63 @@ const verifyEmail = async (req, res) => {
   if (!user || (user.verificationToken !== verificationToken)) {
     throw new Unauthenticated(`Verification failed`)
   }
+  user.isVerified = true
+  user.verificationToken = ''
+  await user.save()
   const { __v, password, ...rest} = user.toObject()
   const tokenPayload = createTokenUser(rest)
   attachCookiesToRes({ res, tokenPayload })
   res.status(StatusCodes.CREATED).json({ user: rest, success: 'success'})
 }
 
+const forgotPassword = async (req, res) => {
+  const { email } = req.body
+  const user = await User.findOne({ email })
+
+  if (!user) {
+    throw Unauthenticated(`User with email ${email} not found`)
+  }
+
+  const passwordToken = crypto.randomBytes(70).toString('hex')
+  const expires = 1000 * 60 * 60 * 24 //1d
+
+  user.passwordToken = passwordToken
+  user.passwordTokenExpirationDate = new Date(Date.now() + expires)
+  await user.save()
+
+  sendResetEmail({ email, token: passwordToken, origin: process.env.CLIENT_ORIGIN})
+  res.status(StatusCodes.OK).json({ success: "success", message: 'Check email fot reset link'})
+}
+
+const resetPassword = async (req, res) => {
+  const { email, token, password } = req.body
+
+  if (!email) {
+    throw new BadRequest(`Please provide valid email`)
+  }
+
+  const user = await User.findOne({ email })
+
+  if (!user) {
+    throw Unauthenticated(`Credentials failed`)
+  }
+
+  const isTokenVerified = user.passwordToken === token
+  const isTokenExpired = !user.passwordTokenExpirationDate || new Date() > user.passwordTokenExpirationDate
+
+  if (!isTokenVerified || isTokenExpired) {
+    throw new Unauthenticated(`Token not valid`)
+  }
+
+  user.password = password
+  user.passwordToken = ''
+  user.password = null
+  await user.save()
+
+  const { __v, password: pass, ...rest} = user.toObject()
+
+  res.status(StatusCodes.OK).json({ success: "success", user: rest })
+}
 const logout = (req, res) => {
   res.cookie('token', '', { expiresIn: new Date(Date.now())})
   res.status(StatusCodes.OK).json({ success: 'success'})
@@ -64,6 +116,8 @@ module.exports = {
   register,
   login,
   verifyEmail,
+  forgotPassword,
+  resetPassword,
   logout
 }
 
